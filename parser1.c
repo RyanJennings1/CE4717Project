@@ -5,9 +5,9 @@
 /*                                                                          */
 /*       Group Members:          ID numbers                                 */
 /*                                                                          */
-/*           John Doe            12345678                                   */
-/*           Jane Murphy         23456789                                   */
-/*           Anthony N. Other    12345679                                   */
+/*           Patrick Lu                                                     */
+/*           Rezvee Sikder        15140997                                  */
+/*           Ryan Jennings                                                  */
 /*                                                                          */
 /*                                                                          */
 /*       Currently just a copy of "smallparser.c".  To create "parser1.c",  */
@@ -104,7 +104,8 @@ PUBLIC int main ( int argc, char *argv[] )
 /*                                                                          */
 /*  ParseProgram implements:                                                */
 /*                                                                          */
-/*       <Program>     :== "BEGIN" { <Statement> ";" } "END" "."            */
+/*       <Program> ::== "PROGRAM" <Identifier> ";"  [ <Declarations> ]      */
+/*       { <ProcDeclaration> } <Block> "."                                  */
 /*                                                                          */
 /*                                                                          */
 /*    Inputs:       None                                                    */
@@ -119,16 +120,815 @@ PUBLIC int main ( int argc, char *argv[] )
 
 PRIVATE void ParseProgram( void )
 {
-    Accept( BEGIN );
-    while ( CurrentToken.code == IDENTIFIER )  {
-        ParseStatement();
-        Accept( SEMICOLON );
-    }
-    Accept( END );
-    Accept( ENDOFPROGRAM );     /* Token "." has name ENDOFPROGRAM          */
+    Accept( PROGRAM );
+    Accept( IDENTIFIER );
+    Accept( SEMICOLON );
+    if ( CurrentToken.code == VAR ) 
+        ParseDeclarations();
+    while (CurrentToken.code == PROCEDURE ) 
+        ParseProcDeclaration();
+    ParseBlock();
+    Accept( ENDOFPROGRAM );
 }
 
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseDeclarations implements:                                           */
+/*                                                                          */
+/*       <Declarations> ::== "VAR" <Variable> { "," <Variable> }    ";"     */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
 
+PRIVATE void ParseDeclarations( void)
+{
+    Accept( VAR );
+    Accept( Variable);
+    while(CurrentToken.code == COMMA ){
+        Accept ( COMMA );
+        Accept ( IDENTIFIER);
+    }
+    Accept( SEMICOLON);  
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseProcDeclarations implements:                                       */
+/*                                                                          */
+/*       <ProcDeclarations> ::== "PROCEDURE" <Identifier> [ <ParameterList>]*/
+/*              ";" [ <Declarations> ] { <ProcDeclaration> } <Block> ";"    */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseProcDeclarations( void)
+{
+    Accept( PROCEDURE);
+    Accept( IDENTIFIER);
+
+    if( CurrentToken.code == LEFTPARENTHESIS)
+        ParseParameterList();
+    Accept( SEMICOLON);
+    if( CurrentToken.code == VAR)
+        ParseDeclarations();
+    while( CurrentToken.code == PROCEDURE)
+        ParseProcDeclarations();
+    ParseBlock();
+    Accept(SEMICOLON);
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseParameterList implements:                                          */
+/*                                                                          */
+/*       <ParameterList> ::== "(" <FormalParameter> {"," <FormalParameter>}
+/*                          ")"
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseParameterList( void)
+{
+    Accept( LEFTPARENTHESIS);
+    ParseFormalParameter();
+    while( CurrentToken.code == COMMA)
+        ParseFormalParameter();
+    Accept( RIGHTPARENTHESIS);
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseFormalParameter implements:                                        */
+/*                                                                          */
+/*       <FormalParameter> ::== [ "REF" ] {<Variable>}                      */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseFormalParameter( void)
+{
+    if( CurrentToken.code == REF)
+        Accept( REF); //??
+    Parse( Variable);
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseBlock implements:                                                  */
+/*                                                                          */
+/*       <Block> :== "BEGIN" { <Statement> ";"} "END"                       */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseBlock( void)
+{
+    Accept( BEGIN);
+    while( CurrentToken == IDENTIFIER || CurrentToken.code == WHILE || 
+        CurrentToken.code == IF || CurrentToken.code == READ ||
+        CurrentToken.code == WRITE)
+    {
+        ParseStatement();
+        Accept( SEMICOLON);
+    }
+    Accept( END):
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseStatement implements:                                              */
+/*                                                                          */
+/*    <Statement> ::== <SimpleStatement> | <WhileStatement> | <IfStatement> */
+/*                     | <ReadStatement> | <WriteStatement>                 */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseStatement( void)
+{
+    if(CurrentToken.code == IDENTIFIER)
+        ParseSimpleStatement();
+    if(CurrentToken.code == WHILE)
+        ParseWhileStatement();
+    if(CurrentToken.code == IF)
+        ParseIfStatement();
+    if(CurrentToken.code == READ)
+        ParseReadStatement();
+    if(CurrentToken.code == WRITE)
+        ParseWriteStatement();
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseSimpleStatment implements:                                         */
+/*                                                                          */
+/*       <SimpleStatement> ::==  <VarOrProcName> <RestOfStatment>           */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseSimpleStatement( void)
+{
+    ParseVariable();
+    ParseRestOfStatement();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseRestOfStatement implements:                                        */
+/*                                                                          */
+/*       <RestOfStatement> ::== <ProcCallList> | <Assignment> | ϵ           */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseRestOfStatement( void)
+{
+    if(CurrentToken.code == LEFTPARENTHESIS)
+        ParseProcCallList();
+    if(CurrentToken.code == ASSIGNMENT)
+        ParseAssignment();
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseProcCallList implements:                                           */
+/*                                                                          */
+/*       <ProcCallList> ::== "(" <ActualParameter> {"," <ActualParameter> } */
+/*                        ")"                                               */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseProcCallList( void)
+{
+    Accept( LEFTPARENTHESIS);
+    ParseActualParameter();
+    while(CurrentToken.code == COMMA)
+        Accept( COMMA);
+        ParseActualParameter();
+    Accept( RIGHTPARENTHESIS);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseAssignment implements:                                             */
+/*                                                                          */
+/*       <Assignment> ::== ":=" <Expression>                                */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseAssignment( void)
+{
+    Accept( ASSIGNMENT);
+    ParseExpression();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseActualParameter implements:                                         */
+/*                                                                          */
+/*       <ActualParameter> ::== <Variable> | <Expression>                    */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseActualParameter( void)
+{
+    ParseExpression(); //??
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseWhileStatement implements:                                         */
+/*                                                                          */
+/*       <WhileStatement> ::== "WHILE" <BooleanExpression> "DO" <Block>     */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseWhileStatement( void)
+{
+    Accept( WHILE);
+    ParseBooleanExpression();
+    Accept( DO);
+    ParseBlock();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseIfParameter implements:                                            */
+/*                                                                          */
+/*       <IfParameter> ::== "IF"<BooleanExpression> "THEN" <Block>          */
+/*                           ["ELSE" <Block> ]                              */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseIfParameter( void)
+{
+    Accept( IF);
+    ParseBooleanExpression();
+    Accept( THEN);
+    ParseBlock();
+    if(CurrentToken.code == ELSE)
+    {
+        Accept( ELSE);
+        ParseBlock();
+    }
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseReadStatement implements:                                          */
+/*                                                                          */
+/*       <ReadStatement> ::== "READ" "(" <Variable> {"," <Variable> } ")"   */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseReadStatement( void)
+{
+    Accept( READ);
+    Accept( LEFTPARENTHESIS);
+    ParseVariable();
+    while(CurrentToken.code == COMMA)
+    {
+        Accept( COMMA);
+        ParseVariable();
+    }
+    Accept( RIGHTPARENTHESIS);
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseWriteStatement implements:                                         */
+/*                                                                          */
+/*       <WriteStatement> ::== "WRITE" "(" <Expression> { ","<Expression> } */
+/*                           ")"                                            */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseWriteStatement( void)
+{
+    Accept( WRITE);
+    Accept( LEFTPARENTHESIS);
+    ParseExpression();
+    while(CurrentToken.code == COMMA)
+    {
+        Accept( COMMA);
+        ParseExpression();
+    }
+    Accept( RIGHTPARENTHESIS);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseExpression implements:                                             */
+/*                                                                          */
+/*       <Expression> ::== <CompoundTerm> {<AddOp> <CompoundTerm>}          */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseExpression( void)
+
+    ParseCompoundTerm();
+    while(CurrentToken.code == ADD || CurrentToken.code == SUBTRACT)
+    {
+        ParseAddOp();
+        ParseCompoundTerm();
+    }
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseCompoundTerm implements:                                           */
+/*                                                                          */
+/*       <CompoundTerm> ::== <Term> {<MultOp> <Term> }                      */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseCompoundTerm( void)
+{
+    ParseTerm();
+    while(CurrentToken.code == MULTIPLY || CurrentToken.code == DIVIDE)
+    {
+        ParseMultOP();
+        ParseTerm();
+    }
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseTerm implements:                                                   */
+/*                                                                          */
+/*       <Term> ::== ["-"] <SubTerm>                                        */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseTerm( void)
+{
+    if(CurrentToken.code == SUBTRACT)
+        Accept( SUBTRACT):
+    ParseSubTerm();
+
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseSubTerm implements:                                                */
+/*                                                                          */
+/*       <SubTerm> ::== <Variable> | <IntConst> | "(" <Expression> ")"      */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseSubTerm( void)
+{
+    if(CurrentToken.code == IDENTIFIER)
+        ParseVariable();
+    if(CurrentToken == INTCONST)
+        ParseIntConst();
+    if(CurrentToken.code == LEFTPARENTHESIS)
+        ParseExpression();
+        Accept( RIGHTPARENTHESIS):
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseBooleanExpression implements:                                      */
+/*                                                                          */
+/*       <BooleanExpression> ::== <Expression> <RelOp> <Expression>         */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseBooleanExpression( void)
+{
+    ParseExpression();
+    ParseRelOp();
+    ParseExpression();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseAddOp implements:                                                  */
+/*                                                                          */
+/*       <AddOp> ::== "+" | "-"                                             */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseAddOp( void)
+{
+    if(CurrentToken.code == ADD)
+        Accept( ADD);
+    if(CurrentToken.code == SUBTRACT)
+        Accept( SUBTRACT);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseMultOp implements:                                                 */
+/*                                                                          */
+/*       <MultOp> ::== "*" | "/"                                            */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseMultOp( void)
+{
+    if(CurrentToken.code == MULTIPLY)
+        Accept( MULTIPLY);
+    if(CurrentToken.code == DIVIDE)
+        Accept( DIVIDE);
+}   
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseRelOp implements:                                                  */
+/*                                                                          */
+/*       <RelOp> ::== "=" | "<=" | ">=" | "<" | ">"                         */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseRelOp( void)
+{
+    if(CurrentToken.code == EQUALITY)
+        Accept( EQUALITY):
+    if(CurrentToken.code == LESSEQUAL)
+        Accept( LESSEQUAL);
+    if(CurrentToken.code == GREATEREQUAL)
+        Accept( GREATEREQUAL);
+    if(CurrentToken.code == LESS)
+        Accept( LESS);
+    if(CurrentToken.code == GREATER)
+        Accept( GREATER);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseVariable implements:                                               */
+/*                                                                          */
+/*       <Variable> ::== <Identifier>                                       */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseVariable( void)
+{
+    ParseIdentifier();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseIntConst implements:                                               */
+/*                                                                          */
+/*       <IntConst> ::== <Digit> { <Digit> }                                */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseVarOrProcName( void)
+{
+    ParseIdentifier();
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseIdentifier implements:                                             */
+/*                                                                          */
+/*       <Identifier> ::== <Alpha> { <AlphaNum> }                           */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
+
+PRIVATE void ParseIdentifier( void)
+{
+    Accept( IDENTIFIER);
+}
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*  ParseStatement implements:                                              */
@@ -146,6 +946,31 @@ PRIVATE void ParseProgram( void )
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
+PRIVATE void ParseIntConst( void)
+{
+    Accept( INTCONST);
+}
+
+/*--------------------------------------------------------------------------*/
+/*                                                                          */
+/*  Parser routines: Recursive-descent implementaion of the grammar's       */
+/*                   productions.                                           */
+/*                                                                          */
+/*                                                                          */
+/*  ParseVarOrProcName implements:                                          */
+/*                                                                          */
+/*       <VarOrProcName> ::== <Identifier>                                  */
+/*                                                                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
+/*                                                                          */
+/*    Outputs:      None                                                    */
+/*                                                                          */
+/*    Returns:      Nothing                                                 */
+/*                                                                          */
+/*    Side Effects: Lookahead token advanced.                               */
+/*                                                                          */
+/*--------------------------------------------------------------------------*/
 PRIVATE void ParseStatement( void )
 {
     Accept( IDENTIFIER );
