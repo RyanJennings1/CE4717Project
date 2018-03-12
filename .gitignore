@@ -13,3 +13,6 @@ Makefile
 
 # plain text #
 *.txt
+
+# Test Program # 
+*.prog
