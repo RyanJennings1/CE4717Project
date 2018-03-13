@@ -35,6 +35,11 @@
 /*       remainder of the input is simply copied to the output (using       */
 /*       the routine "ReadToEndOfFile") without further comment.            */
 /*                                                                          */
+/*       Innsctructions for compiling: make parser1 parser1.c               */
+/*                                     gcc -o parser1 parser1.o libcomp.a   */
+/*                                                                          */
+/*                                                                          */
+/*                                                                          */
 /*--------------------------------------------------------------------------*/
 
 #include <stdio.h>
