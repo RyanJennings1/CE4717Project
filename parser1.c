@@ -118,10 +118,15 @@ PUBLIC int main ( int argc, char *argv[] )
         ParseProgram();
         fclose( InputFile );
         fclose( ListFile );
+        printf("Valid\n");
         return  EXIT_SUCCESS;
     }
-    else 
+    else
+    {
+        printf("Syntax error\n");
         return EXIT_FAILURE;
+    } 
+
 }
 
 
@@ -183,11 +188,12 @@ PRIVATE void ParseProgram( void )
 
 PRIVATE void ParseDeclarations( void)
 {
-    Accept( VAR );
+    Accept( VAR);
     ParseVariable();
-    while(CurrentToken.code == COMMA ){
-        Accept ( COMMA );
-        Accept ( IDENTIFIER);
+    while(CurrentToken.code == COMMA )
+    {
+        Accept ( COMMA);
+        ParseVariable();
     }
     Accept( SEMICOLON);  
 
@@ -221,11 +227,15 @@ PRIVATE void ParseProcDeclaration( void)
 
     if( CurrentToken.code == LEFTPARENTHESIS)
         ParseParameterList();
+
     Accept( SEMICOLON);
+
     if( CurrentToken.code == VAR)
         ParseDeclarations();
+
     while( CurrentToken.code == PROCEDURE)
         ParseProcDeclaration();
+
     ParseBlock();
     Accept(SEMICOLON);
 
@@ -256,9 +266,13 @@ PRIVATE void ParseParameterList( void)
 {
     Accept( LEFTPARENTHESIS);
     ParseFormalParameter();
+
     while( CurrentToken.code == COMMA)
+    {
+        Accept(COMMA);
         ParseFormalParameter();
-    Accept( RIGHTPARENTHESIS);
+    }
+    Accept(RIGHTPARENTHESIS);
 
 }
 
@@ -286,7 +300,8 @@ PRIVATE void ParseParameterList( void)
 PRIVATE void ParseFormalParameter( void)
 {
     if( CurrentToken.code == REF)
-        Accept( REF); /* Dont understand*/
+        Accept( REF); 
+
    ParseVariable();
 
 }
@@ -349,16 +364,21 @@ PRIVATE void ParseBlock( void)
 
 PRIVATE void ParseStatement( void)
 {
-    if(CurrentToken.code == IDENTIFIER)
-        ParseSimpleStatement();
-    if(CurrentToken.code == WHILE)
-        ParseWhileStatement();
-    if(CurrentToken.code == IF)
-        ParseIfStatement();
-    if(CurrentToken.code == READ)
-        ParseReadStatement();
-    if(CurrentToken.code == WRITE)
-        ParseWriteStatement();
+    switch(CurrentToken.code)
+    {
+        case IDENTIFIER:ParseSimpleStatement(); break;
+        case WHILE:ParseWhileStatement(); break;
+        case IF:ParseIfStatement(); break;
+        case READ:ParseReadStatement(); break;
+        case WRITE:ParseWriteStatement(); break;
+        default:
+                    SyntaxError( IDENTIFIER, CurrentToken );
+                    ReadToEndOfFile();
+                    fclose(InputFile );
+                    fclose(ListFile);
+                    exit(EXIT_FAILURE);
+                    break;
+    }
 
 }
 
@@ -445,8 +465,10 @@ PRIVATE void ParseProcCallList( void)
     Accept( LEFTPARENTHESIS);
     ParseActualParameter();
     while(CurrentToken.code == COMMA)
+    {
         Accept( COMMA);
         ParseActualParameter();
+    }
     Accept( RIGHTPARENTHESIS);
 }
 
@@ -591,14 +613,7 @@ PRIVATE void ParseIfStatement( void)
 PRIVATE void ParseReadStatement( void)
 {
     Accept( READ);
-    Accept( LEFTPARENTHESIS);
-    ParseVariable();
-    while(CurrentToken.code == COMMA)
-    {
-        Accept( COMMA);
-        ParseVariable();
-    }
-    Accept( RIGHTPARENTHESIS);
+    ParseProcCallList();
 
 }
 
@@ -626,14 +641,7 @@ PRIVATE void ParseReadStatement( void)
 PRIVATE void ParseWriteStatement( void)
 {
     Accept( WRITE);
-    Accept( LEFTPARENTHESIS);
-    ParseExpression();
-    while(CurrentToken.code == COMMA)
-    {
-        Accept( COMMA);
-        ParseExpression();
-    }
-    Accept( RIGHTPARENTHESIS);
+    ParseProcCallList();
 }
 
 /*--------------------------------------------------------------------------*/
@@ -751,13 +759,15 @@ PRIVATE void ParseTerm( void)
 
 PRIVATE void ParseSubTerm( void)
 {
-    if(CurrentToken.code == IDENTIFIER)
-        ParseVariable();
-    if(CurrentToken.code == INTCONST)
-        ParseIntConst();
-    if(CurrentToken.code == LEFTPARENTHESIS)
-        ParseExpression();
-        Accept( RIGHTPARENTHESIS);
+    switch(CurrentToken.code)
+    {
+        case IDENTIFIER:ParseVariable(); break;
+        case INTCONST:ParseIntConst(); break;
+        case LEFTPARENTHESIS:Accept(LEFTPARENTHESIS); ParseExpression(); Accept(RIGHTPARENTHESIS); break;
+        default:
+        SyntaxError(IDENTIFIER,CurrentToken);
+                break;
+    }
 }
 
 /*--------------------------------------------------------------------------*/
@@ -959,6 +969,7 @@ PRIVATE void ParseIdentifier( void)
 {
     Accept( IDENTIFIER);
 }
+
 
 
 
