@@ -189,6 +189,7 @@ PRIVATE void ParseProgram( void )
     Synchronise(&ProgramStatementFS_aug2, &ProgramStatementFSB);
     ParseBlock();
     Accept( ENDOFPROGRAM );
+    Accept( ENDOFINPUT );
 }
 
 /*--------------------------------------------------------------------------*/
@@ -1138,32 +1139,23 @@ PRIVATE void Synchronise(SET *F, SET *FB)
 
 PRIVATE void SetupSets(void)
 {
-  /*Program First (1)*/
-  ClearSet(&ProgramStatementFS_aug1);
-  AddElements(&ProgramStatementFS_aug1,3,VAR,PROCEDURE,BEGIN);
-  /*Program First (2)*/
-  ClearSet(&ProgramStatementFS_aug2);
-  AddElements(&ProgramStatementFS_aug2,2,PROCEDURE,BEGIN);
-  /*Program Follow + Beacon*/
-  ClearSet(&ProgramStatementFSB);
-  AddElements(&ProgramStatementFSB,3,END,ENDOFPROGRAM,ENDOFINPUT);
 
-  /*Procedure First (1)*/
-  ClearSet(&ProcedureStatementFS_aug1);
-  AddElements(&ProcedureStatementFS_aug1,3,VAR,PROCEDURE,BEGIN);
-  /*Procedure First (2)*/
-  ClearSet(&ProcedureStatementFS_aug2);
-  AddElements(&ProcedureStatementFS_aug2,2,PROCEDURE,BEGIN);
-  /*Procedure Follow + Beacon*/
-  ClearSet(&ProcedureStatementFSB);
-  AddElements(&ProcedureStatementFSB,3,END,ENDOFPROGRAM,ENDOFINPUT);
+  InitSet(&ProgramStatementFS_aug1, 3, VAR, PROCEDURE, BEGIN);
 
-  /*Block First*/
-  ClearSet(&BlockStatementFS_aug);
-  AddElements(&BlockStatementFS_aug,6,END,IDENTIFIER,WHILE,IF,READ,WRITE);
-  /*Block Follow + Beacons*/
-  ClearSet(&BlockStatementFSB);
-  AddElements(&BlockStatementFSB,4,SEMICOLON,ELSE,ENDOFPROGRAM,ENDOFINPUT);
+  InitSet(&ProgramStatementFS_aug2, 2, PROCEDURE, BEGIN);
+
+  InitSet(&ProgramStatementFSB, 3, END, ENDOFPROGRAM, ENDOFINPUT);
+
+  InitSet(&ProcedureStatementFS_aug1, 3, VAR, PROCEDURE, BEGIN);
+
+  InitSet(&ProcedureStatementFS_aug2, 3, PROCEDURE, BEGIN);
+
+  InitSet(&ProcedureStatementFSB, 3, END, ENDOFPROGRAM, ENDOFINPUT);
+
+  InitSet(&BlockStatementFS_aug, 6, END, IDENTIFIER, WHILE, IF, READ, WRITE);
+
+  InitSet(&BlockStatementFSB, 4, SEMICOLON, ELSE, ENDOFPROGRAM, ENDOFINPUT);
+
 }
 
 /*--------------------------------------------------------------------------*/
