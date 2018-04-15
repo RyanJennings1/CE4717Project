@@ -83,7 +83,7 @@ PRIVATE void Accept( int code );
 PRIVATE void Synchronise(SET *F, SET *FB);
 PRIVATE void SetupSets(void);
 
-PRIVATE void MakeSymbolTableEntry();
+PRIVATE SYMBOL *MakeSymbolTableEntry(int symtype);
 PRIVATE SYMBOL *LookupSymbol();
 
 PRIVATE SET ProgramStatementFS_aug1;
@@ -96,7 +96,7 @@ PRIVATE SET ProcedureStatementFBS;
 PRIVATE SET BlockStatementFBS;
 
 PRIVATE void ParseProgram(void);
-PRIVATE void ParseDeclarations(void);
+PRIVATE int ParseDeclarations(void);
 PRIVATE void ParseProcDeclaration(void);
 PRIVATE void ParseParameterList(void);
 PRIVATE void ParseFormalParameter(void);
@@ -223,7 +223,7 @@ PRIVATE void ParseProgram(void) {
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 
-PRIVATE void ParseDeclarations(void) {
+PRIVATE int ParseDeclarations(void) {
     int vcount = 0;
     Accept(VAR);
 
@@ -239,6 +239,7 @@ PRIVATE void ParseDeclarations(void) {
     }
     Accept(SEMICOLON);
     Emit(I_INC,vcount);
+    return vcount;
 
 }
 
@@ -264,26 +265,31 @@ PRIVATE void ParseDeclarations(void) {
 /*--------------------------------------------------------------------------*/
 
 PRIVATE void ParseProcDeclaration(void) {
+    int vcount = 0;
+    int backpatch_addr;
+    SYMBOL *procedure;
     Accept(PROCEDURE);
 
-    MakeSymbolTableEntry(STYPE_PROCEDURE);
+    procedure = MakeSymbolTableEntry(STYPE_PROCEDURE);
     Accept(IDENTIFIER);
+
+    backpatch_addr = CurrentCodeAddress();
+    Emit( I_BR, 0 );
+    procedure->address = CurrentCodeAddress();
 
     scope++; /* To avoid multiple declarations */
 
-    if(CurrentToken.code == LEFTPARENTHESIS)
-        ParseParameterList();
-
     Accept(SEMICOLON);
-    Synchronise(&ProcedureStatementFS_aug1,&ProcedureStatementFBS);
+
     if(CurrentToken.code == VAR)
-        ParseDeclarations();
-    Synchronise(&ProcedureStatementFS_aug2,&ProcedureStatementFBS);
-    while (CurrentToken.code == PROCEDURE)
-        ParseProcDeclaration();
-    Synchronise(&ProcedureStatementFS_aug2,&ProcedureStatementFBS);
+        vcount = ParseDeclarations();
+
     ParseBlock();
     Accept(SEMICOLON);
+
+    Emit(I_DEC, vcount);
+    _Emit( I_RET );
+    BackPatch( backpatch_addr, CurrentCodeAddress() );
 
     RemoveSymbols(scope);
     scope--;
@@ -492,7 +498,10 @@ PRIVATE void ParseRestOfStatement(SYMBOL *var) {
         case SEMICOLON:
             if ( var != NULL ) {
                 if ( var->type == STYPE_PROCEDURE ) {
+                    _Emit(I_PUSHFP);
+                    _Emit(I_BSF);
                     Emit( I_CALL, var->address );
+                    _Emit(I_RSF);
                 } else {
                     printf("error in parse rest of statement semicolon case");
                     KillCodeGeneration();
@@ -861,6 +870,7 @@ PRIVATE void ParseTerm(void) {
 /*--------------------------------------------------------------------------*/
 
 PRIVATE void ParseSubTerm(void) {
+    int i, dS;
     SYMBOL *var;
     switch(CurrentToken.code) {
         case INTCONST:
@@ -875,13 +885,24 @@ PRIVATE void ParseSubTerm(void) {
         case IDENTIFIER:
         default:
             var = LookupSymbol();
-            if(var != NULL && var->type == STYPE_VARIABLE) {
+            if (var != NULL && var->type == STYPE_VARIABLE) {
                 if (writing) {
                     Emit(I_LOADA,var->address); /*Load the parameter value*/
                 } else if (reading) {
                     Emit(I_STOREA,var->address); /*Store user input into each parameter*/
                 } else {
                     Emit(I_LOADA,var->address);
+                }
+            } else if ( var->type == STYPE_LOCALVAR ) {
+                dS = scope - var->scope;
+                if ( dS == 0 )
+                  Emit( I_LOADFP, var->address );
+                else {
+                  _Emit( I_LOADFP );
+    
+                  for ( i = 0; i < dS - 1; i++ )
+                      _Emit( I_LOADSP );
+                  Emit( I_LOADSP, var->address );
                 }
             }
             else printf("Name undeclared or not a variable..!!");
@@ -916,7 +937,7 @@ PRIVATE int ParseBooleanExpression(void) {
     ParseExpression();
     RelOpInstruction = ParseRelOp();
     ParseExpression();
-    _Emit(I_SUB);
+    ParseRelOp();
     BackPatchAddr = CurrentCodeAddress( );
     Emit( RelOpInstruction, 0 );
     return BackPatchAddr;
@@ -1305,7 +1326,7 @@ PRIVATE int  OpenFiles( int argc, char *argv[] ) {
 /* entries. In general maps the identifier with the information record.     */
 /*--------------------------------------------------------------------------*/
 
-PRIVATE void MakeSymbolTableEntry( int symtype ) {
+PRIVATE SYMBOL *MakeSymbolTableEntry( int symtype ) {
    /*〈Variable Declarations here〉*/
     SYMBOL *newsptr; /*new symbol pointer*/
     SYMBOL *oldsptr; /*old symbol pointer*/
@@ -1328,7 +1349,7 @@ PRIVATE void MakeSymbolTableEntry( int symtype ) {
                 }
                newsptr->scope = scope;
                newsptr->type = symtype;
-               if ( symtype == STYPE_VARIABLE ) {
+               if ( symtype == STYPE_VARIABLE || symtype == STYPE_LOCALVAR ) {
                    newsptr->address = varaddress;
                    varaddress++;                 
                }
@@ -1341,6 +1362,7 @@ PRIVATE void MakeSymbolTableEntry( int symtype ) {
    } else {
 
    }
+   return newsptr;
 }
 
 /*--------------------------------------------------------------------------*/
