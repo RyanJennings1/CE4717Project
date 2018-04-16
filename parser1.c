@@ -1,4 +1,4 @@
-    /*--------------------------------------------------------------------------*/
+/*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*       parser1                                                            */
 /*                                                                          */
@@ -10,8 +10,6 @@
 /*           Ryan Jennings        15152324                                  */
 /*                                                                          */
 /*                                                                          */
-/*       Currently just a copy of "smallparser.c".  To create "parser1.c",  */
-/*       modify this source to reflect the CPL grammar.                     */
 /*                                                                          */
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
@@ -561,7 +559,7 @@ PRIVATE void ParseWhileStatement( void)
 /*                   productions.                                           */
 /*                                                                          */
 /*                                                                          */
-/*  ParseIfParameter implements:                                            */
+/*  ParseIfStatement implements:                                            */
 /*                                                                          */
 /*       <IfParameter> ::== "IF"<BooleanExpression> "THEN" <Block>          */
 /*                           ["ELSE" <Block> ]                              */
