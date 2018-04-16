@@ -10,9 +10,6 @@
 /*           Ryan Jennings        15152324                                  */
 /*                                                                          */
 /*                                                                          */
-/*       Currently just a copy of "smallparser.c".  To create "parser1.c",  */
-/*       modify this source to reflect the CPL grammar.                     */
-/*                                                                          */
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
 /*       smallparser                                                        */
@@ -62,10 +59,10 @@
 
 PRIVATE FILE *InputFile;           /*  CPL source comes from here.          */
 PRIVATE FILE *ListFile;            /*  For nicely-formatted syntax errors.  */
-PRIVATE FILE *CodeFile;			   /* machine code output file */
-PRIVATE int varaddress;			   /* incremented each time a new symbol table entry made */
+PRIVATE FILE *CodeFile;			       /* machine code output file */
+PRIVATE int varaddress;			       /* incremented each time a new symbol table entry made */
 PRIVATE int writing;               /* set to one while parsing arguments*/
-PRIVATE int reading;			   /* set to one while parsing arguments*/
+PRIVATE int reading;			         /* set to one while parsing arguments*/
 PRIVATE int ERROR_FLAG;            /* if any syntax errors are detected set to 1*/
 PRIVATE TOKEN  CurrentToken;       /*  Parser lookahead token.  Updated by  */
                                    /*  routine Accept (below).  Must be     */
@@ -661,7 +658,7 @@ PRIVATE void ParseWhileStatement(void) {
 /*                   productions.                                           */
 /*                                                                          */
 /*                                                                          */
-/*  ParseIfParameter implements:                                            */
+/*  ParseIfStatement implements:                                            */
 /*                                                                          */
 /*       <IfParameter> ::== "IF"<BooleanExpression> "THEN" <Block>          */
 /*                           ["ELSE" <Block> ]                              */
@@ -1186,19 +1183,11 @@ PRIVATE void Accept( int ExpectedToken ) {
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/*  Synchronise:  Takes an expected token name as argument, and if the current   */
-/*           lookahead matches this, advances the lookahead and returns.    */
-/*                                                                          */
-/*           If the expected token fails to match the current lookahead,    */
-/*           this routine reports a syntax error and exits ("crash & burn"  */
-/*           parsing).  Note the use of routine "SyntaxError"               */
-/*           (from "scanner.h") which puts the error message on the         */
-/*           standard output and on the listing file, and the helper        */
-/*           "ReadToEndOfFile" which just ensures that the listing file is  */
-/*           completely generated.                                          */
+/*  Synchronise:  Synchronise() function                                    */
 /*                                                                          */
 /*                                                                          */
-/*    Inputs:       Integer code of expected token                          */
+/*                                                                          */
+/*    Inputs:       Two arguments                                           */
 /*                                                                          */
 /*    Outputs:      None                                                    */
 /*                                                                          */
@@ -1223,19 +1212,11 @@ PRIVATE void Synchronise(SET *F, SET *FB) {
 
 /*--------------------------------------------------------------------------*/
 /*                                                                          */
-/*  SetupSets:  Takes an expected token name as argument, and if the current   */
-/*           lookahead matches this, advances the lookahead and returns.    */
-/*                                                                          */
-/*           If the expected token fails to match the current lookahead,    */
-/*           this routine reports a syntax error and exits ("crash & burn"  */
-/*           parsing).  Note the use of routine "SyntaxError"               */
-/*           (from "scanner.h") which puts the error message on the         */
-/*           standard output and on the listing file, and the helper        */
-/*           "ReadToEndOfFile" which just ensures that the listing file is  */
-/*           completely generated.                                          */
+/*  SetupSets:  SetupSets() function                                        */
 /*                                                                          */
 /*                                                                          */
-/*    Inputs:       Integer code of expected token                          */
+/*                                                                          */
+/*    Inputs:       None                                                    */
 /*                                                                          */
 /*    Outputs:      None                                                    */
 /*                                                                          */
